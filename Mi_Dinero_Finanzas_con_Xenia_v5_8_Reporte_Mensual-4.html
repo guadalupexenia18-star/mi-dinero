@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#103b33">
+  <title>Mi Dinero | Finanzas con Xenia · v5.8 Reporte mensual</title>
+  
+  <style>
+    :root{
+      --bg:#f6f7f5;--card:#fff;--text:#18201d;--muted:#6d7672;--line:#dfe5e1;
+      --primary:#103b33;--soft:#e9f1ee;--good:#267a52;--warn:#b47716;--bad:#a84242;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+    .app{max-width:760px;margin:auto;padding:18px 14px 90px}
+    h1{font-size:24px;margin:4px 0}.sub{color:var(--muted);margin:0 0 18px}
+    .grid{display:grid;gap:10px}.stats{grid-template-columns:repeat(5,1fr)}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px}
+    .stat small{display:block;color:var(--muted);margin-bottom:5px}.stat strong{font-size:21px}
+    .section-title{font-size:18px;margin:0 0 4px}.section-sub{font-size:14px;color:var(--muted);margin:0 0 14px}
+    label{display:block;font-size:13px;font-weight:650;margin:0 0 5px}
+    input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:16px}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    button{border:0;border-radius:12px;padding:12px 14px;font-size:15px;font-weight:700;cursor:pointer}
+    .primary{background:var(--primary);color:#fff}.ghost{background:var(--soft);color:var(--primary)}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .msg{min-height:20px;color:var(--muted);font-size:13px;margin-top:8px}
+    .budget-row{padding:12px 0;border-top:1px solid var(--line)}
+    .budget-row:first-child{border-top:0}
+    .row-top{display:flex;justify-content:space-between;gap:12px;align-items:start}
+    .row-top strong{font-size:15px}.row-top span{font-size:13px;color:var(--muted);text-align:right}
+    .bar{height:9px;background:#edf0ee;border-radius:999px;overflow:hidden;margin-top:8px}
+    .fill{height:100%;border-radius:999px}.good{background:var(--good)}.warn{background:var(--warn)}.bad{background:var(--bad)}
+    .status{font-size:12px;font-weight:700;margin-top:6px}
+    .mov{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+    .mov:first-child{border-top:0}.mov .meta{color:var(--muted);font-size:12px}.income{color:var(--good)}.expense{color:var(--bad)}
+    .tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}.tab{flex:1;min-width:110px;background:#fff;border:1px solid var(--line);color:var(--text)}.tab.active{background:var(--primary);color:#fff}.periods{display:flex;gap:8px;flex-wrap:wrap}.period-btn{background:#fff;border:1px solid var(--line);color:var(--text)}.period-btn.active{background:var(--primary);color:#fff}.period-custom{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-top:10px}.period-label{font-size:13px;color:var(--muted);margin-top:8px}
+    .hidden{display:none}
+    @media(max-width:600px){.stats{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+<noscript>
+  <div style="margin:16px;padding:14px;border:2px solid #a84242;border-radius:12px;background:#fff3f3;color:#6b1f1f;font-family:system-ui">
+    Esta mini app necesita JavaScript. Ábrela con Chrome o Edge; el visor de archivos del teléfono no permite guardar ni cambiar categorías.
+  </div>
+</noscript>
+
+  <main class="app">
+    <h1>Mi Dinero</h1>
+    <p class="sub">Finanzas con Xenia · Prueba personal</p>
+
+    <section class="card">
+      <h2 class="section-title">Periodo</h2>
+      <div class="periods">
+        <button class="period-btn" id="periodWeek" type="button">Esta semana</button>
+        <button class="period-btn active" id="periodMonth" type="button">Este mes</button>
+        <button class="period-btn" id="periodPrevMonth" type="button">Mes anterior</button>
+        <button class="period-btn" id="periodAll" type="button">Todo</button>
+        <button class="period-btn" id="periodCustom" type="button">Personalizado</button>
+      </div>
+      <div id="customPeriod" class="period-custom hidden">
+        <div><label for="dateFrom">Desde</label><input id="dateFrom" type="date"></div>
+        <div><label for="dateTo">Hasta</label><input id="dateTo" type="date"></div>
+        <button class="primary" id="applyCustom" type="button">Aplicar</button>
+      </div>
+      <div id="periodLabel" class="period-label">Mostrando: este mes</div>
+    </section>
+
+    <div style="height:12px"></div>
+
+    <section class="grid stats">
+      <div class="card stat"><small>Ingresos</small><strong id="incomeTotal">$0</strong></div>
+      <div class="card stat"><small>Gastos</small><strong id="expenseTotal">$0</strong></div>
+      <div class="card stat"><small>Ahorro</small><strong id="savingTotal">$0</strong></div>
+      <div class="card stat"><small>Inversión</small><strong id="investmentTotal">$0</strong></div>
+      <div class="card stat"><small>Disponible</small><strong id="balanceTotal">$0</strong></div>
+    </section>
+
+    <div style="height:12px"></div>
+
+    <section class="card">
+      <div class="tabs">
+        <button class="tab active" id="tabMov" type="button">Movimiento</button>
+        <button class="tab" id="tabBudget" type="button">Presupuesto</button>
+        <button class="tab" id="tabGoals" type="button">Metas</button>
+<button class="tab" id="tabDebts" type="button">Deudas</button>
+<button class="tab" id="tabReport" type="button">Reporte</button>
+      </div>
+
+      <div id="movementPanel">
+        <h2 class="section-title">Registrar movimiento</h2>
+        <p class="section-sub">Tus datos se guardan en este dispositivo.</p>
+        <form id="movementForm">
+          <div class="form-grid">
+            <div><label for="type">Tipo</label><select id="type"><option value="expense">Gasto</option><option value="income">Ingreso</option><option value="saving">Ahorro</option><option value="investment">Inversión</option></select></div>
+            <div><label for="amount">Monto</label><input id="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Ej. 350"></div>
+            <div><label id="categoryLabel" for="category">Tipo de gasto</label>
+<select id="category">
+<option>Comida</option><option>Comida fuera de casa</option><option>Casa</option>
+<option>Transporte</option><option>Hijos</option><option>Deudas</option>
+<option>Entretenimiento</option><option>Salud</option><option>Educación</option>
+<option>Servicios</option><option>Ropa</option><option>Otros</option>
+</select></div>
+            <div><label for="movementDate">Fecha del movimiento</label><input id="movementDate" type="date"></div>
+            <div><label for="note">Concepto</label><input id="note" maxlength="60" placeholder="Ej. Supermercado"></div>
+          </div>
+          <div class="actions"><button class="primary" id="addMovementBtn" type="button">Agregar</button>
+<button class="ghost hidden" id="cancelEditBtn" type="button">Cancelar edición</button></div>
+          <div id="movementMsg" class="msg"></div>
+        </form>
+      </div>
+
+      <div id="budgetPanel" class="hidden">
+        <h2 class="section-title">Presupuesto mensual</h2>
+        <p class="section-sub">Define cuánto quieres gastar por categoría. El ahorro se maneja aparte.</p>
+        <form id="budgetForm">
+          <div class="form-grid">
+            <div><label for="budgetCategory">Categoría</label><select id="budgetCategory"></select></div>
+            <div><label for="budgetAmount">Límite mensual</label><input id="budgetAmount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Ej. 8000"></div>
+          </div>
+          <div class="actions"><button class="primary" type="submit">Guardar presupuesto</button></div>
+          <div id="budgetMsg" class="msg"></div>
+        </form>
+      </div>
+
+      <div id="goalsPanel" class="hidden">
+        <h2 class="section-title">Metas de ahorro</h2>
+        <p class="section-sub">Crea metas sencillas y registra cuánto llevas acumulado.</p>
+        <form id="goalForm">
+          <div class="form-grid">
+            <div><label for="goalName">Nombre de la meta</label><input id="goalName" maxlength="50" placeholder="Ej. Fondo de emergencia"></div>
+            <div><label for="goalTarget">Monto objetivo</label><input id="goalTarget" type="number" min="1" step="0.01" inputmode="decimal" placeholder="Ej. 100000"></div>
+            <div><label for="goalCurrent">Ya tengo ahorrado</label><input id="goalCurrent" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Ej. 15000"></div>
+            <div><label for="goalDate">Fecha objetivo</label><input id="goalDate" type="date"></div>
+          </div>
+          <div class="actions"><button class="primary" type="submit">Crear meta</button></div>
+          <div id="goalMsg" class="msg"></div>
+        </form>
+      </div>
+    </section>
+
+    <div style="height:12px"></div>
+
+    <div id="budgetContent" class="hidden">
+      <section class="card">
+        <h2 class="section-title">Presupuesto del mes</h2>
+        <p class="section-sub">Presupuesto del mes actual · Bien · Cuidado · Te pasaste</p>
+        <div id="budgetList"></div>
+      </section>
+    </div>
+
+    <div style="height:12px"></div>
+
+    <div id="goalsContent" class="hidden">
+      <section class="card">
+        <h2 class="section-title">Mis metas</h2>
+        <p class="section-sub">Avance de tus objetivos de ahorro.</p>
+        <div id="goalList"></div>
+      </section>
+    </div>
+
+    <div style="height:12px"></div>
+
+    <div id="movementContent">
+      <section class="card">
+        <h2 class="section-title">Patrimonio en construcción</h2>
+        <p class="section-sub">Ahorro + inversión del mes. No se cuentan como gasto.</p>
+        <strong id="wealthTotal" style="font-size:28px">$0</strong>
+        <p id="wealthInsight" class="msg"></p>
+      </section>
+
+      <div style="height:12px"></div>
+
+      <section class="card">
+        <h2 class="section-title">Movimientos recientes</h2>
+        <div id="movementList"></div>
+        
+
+
+<section class="card" id="backupPanel" style="margin-top:18px">
+  <div class="section-title">Respaldo de información</div>
+  <p class="section-sub">Guarda una copia de tus movimientos, presupuestos, metas, deudas y abonos. Úsala para recuperar tus datos si cambias de teléfono o se borra el almacenamiento del navegador.</p>
+  <div class="actions">
+    <button class="primary" id="backupBtn" type="button">Crear respaldo</button>
+    <button class="ghost" id="restoreBtn" type="button">Restaurar respaldo</button>
+    <input id="restoreFile" type="file" accept=".json,application/json" class="hidden">
+  </div>
+  <p class="msg" id="backupMsg"></p>
+</section>
+
+<details style="margin-top:18px"><summary style="cursor:pointer;color:var(--muted);font-size:13px">Opciones avanzadas</summary>
+<div class="actions"><button id="clearBtn" class="ghost" type="button">Borrar todos los datos</button></div>
+<p class="msg">Elimina movimientos, presupuestos y metas. Úsalo solo para reiniciar la app.</p></details>
+      </section>
+    </div>
+  
+
+<section class="card hidden" id="reportPanel">
+  <div class="section-title">Reporte mensual</div>
+  <p class="section-sub">Un resumen sencillo para entender cómo se movió tu dinero.</p>
+  <div class="form-grid">
+    <div><label for="reportMonth">Mes a consultar</label><input id="reportMonth" type="month"></div>
+  </div>
+  <div style="height:12px"></div>
+  <div class="stats">
+    <div class="card stat"><small>Ingresos</small><strong id="rIncome">$0</strong></div>
+    <div class="card stat"><small>Gastos</small><strong id="rExpense">$0</strong></div>
+    <div class="card stat"><small>Ahorro</small><strong id="rSaving">$0</strong></div>
+    <div class="card stat"><small>Inversión</small><strong id="rInvestment">$0</strong></div>
+    <div class="card stat"><small>Disponible</small><strong id="rBalance">$0</strong></div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="budget-row">
+    <div class="row-top"><strong>Construcción de patrimonio</strong><span id="rWealth">$0</span></div>
+    <div class="bar"><div class="fill good" id="rWealthBar" style="width:0%"></div></div>
+    <div class="status" id="rWealthText"></div>
+  </div>
+  <div class="budget-row">
+    <div class="row-top"><strong>Pago de deudas</strong><span id="rDebtPayments">$0</span></div>
+    <div class="status">Pagos registrados como gasto en la categoría Deudas.</div>
+  </div>
+  <div class="section-title" style="margin-top:18px">¿En qué gastaste?</div>
+  <div id="rCategories"></div>
+  <div class="section-title" style="margin-top:18px">Lectura rápida</div>
+  <div id="rInsights" class="msg"></div>
+  <div class="section-title" style="margin-top:18px">Comparación con el mes anterior</div>
+  <div id="rComparison" class="msg"></div>
+</section>
+
+<section class="card hidden" id="debtsPanel">
+  <div class="section-title">Deudas</div>
+  <p class="section-sub">Registra lo que debes y observa cómo baja el saldo con cada pago.</p>
+  <form id="debtForm" onsubmit="return false;">
+    <div class="grid">
+      <div><label for="debtName">Nombre de la deuda</label><input id="debtName" placeholder="Ej. Tarjeta BBVA"></div>
+      <div><label for="debtInitial">Saldo inicial</label><input id="debtInitial" type="number" min="0" step="0.01" placeholder="0.00"></div>
+      <div><label for="debtCurrent">Saldo actual</label><input id="debtCurrent" type="number" min="0" step="0.01" placeholder="0.00"></div>
+      <div><label for="debtPayment">Pago mensual</label><input id="debtPayment" type="number" min="0" step="0.01" placeholder="0.00"></div>
+      <div><label for="debtDueDay">Día de pago</label><input id="debtDueDay" type="number" min="1" max="31" placeholder="Ej. 15"></div>
+    </div>
+    <div class="actions"><button class="primary" id="addDebtBtn" type="button">Agregar deuda</button></div>
+    <p class="msg" id="debtMsg"></p>
+  </form>
+</section>
+
+<section class="card hidden" id="debtsContent">
+  <div class="section-title">Mis deudas</div>
+  <div id="debtSummary" class="section-sub"></div>
+  <div id="debtList"></div>
+</section>
+</main>
+
+<script>
+(() => {
+  const expenseCategories = ['Comida','Comida fuera de casa','Casa','Transporte','Hijos','Deudas','Entretenimiento','Salud','Educación','Servicios','Ropa','Otros'];
+  const incomeCategories = ['Sueldo','Honorarios','Ventas','Negocio','Comisiones','Rentas','Intereses','Bono','Ingreso extra','Otros ingresos'];
+  const savingCategories = ['Fondo de emergencia','Meta de ahorro','Vacaciones','Compra importante','Ahorro general','Otro ahorro'];
+  const investmentCategories = ['CETES','GBM','Fondo de inversión','AFORE / PPR','Acciones','ETF','Otra inversión'];
+  const budgetCategories = expenseCategories.slice();
+  const money = new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'});
+  const key = 'finanzasConXenia_v1';
+  let state = {movements:[], budgets:{}, goals:[], debts:[]};
+  let periodMode = 'month';
+  let customFrom = '';
+  let customTo = '';
+  let editingMovementIndex = null;
+
+  const $ = id => document.getElementById(id);
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function localDateString(d=new Date()){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function parseDateOnly(s){ if(!s) return null; const p=s.split('-').map(Number); if(p.length!==3) return null; return new Date(p[0],p[1]-1,p[2],12,0,0,0); }
+  function fmtDate(s){ const d=parseDateOnly(s); return d ? new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'short',year:'numeric'}).format(d) : ''; }
+  function save(){
+    try{
+      localStorage.setItem(key, JSON.stringify(state));
+      return true;
+    }catch(e){
+      alert('El navegador no permitió guardar los datos. Abre este archivo con Chrome.');
+      return false;
+    }
+  }
+  function load(){
+    try{
+      const raw = localStorage.getItem(key);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        if(parsed && typeof parsed==='object'){
+          state = {movements:Array.isArray(parsed.movements)?parsed.movements:[], budgets:parsed.budgets||{}, goals:Array.isArray(parsed.goals)?parsed.goals:[], debts:Array.isArray(parsed.debts)?parsed.debts:[]};
+          state.debts=(state.debts||[]).map((d,i)=>{if(!d.id)d.id='d_'+Date.now()+'_'+i;if(!Array.isArray(d.payments))d.payments=[];return d;});
+          state.movements = state.movements.map((m,i)=>{
+            if(!m.date){
+              const d = m.ts ? new Date(m.ts) : new Date();
+              m.date = localDateString(d);
+            }
+            if(!m.id) m.id='m_'+(m.ts||Date.now())+'_'+i;
+            return m;
+          });
+          save();
+        }
+      }
+    }catch(e){}
+  }
+  function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function updateCategories(){
+    const type = $('type').value;
+    let list=expenseCategories, label='Tipo de gasto', placeholder='Ej. Supermercado';
+    if(type==='income'){ list=incomeCategories; label='Tipo de ingreso'; placeholder='Ej. Sueldo semanal'; }
+    else if(type==='saving'){ list=savingCategories; label='Tipo de ahorro'; placeholder='Ej. Fondo de emergencia'; }
+    else if(type==='investment'){ list=investmentCategories; label='Tipo de inversión'; placeholder='Ej. Aportación semanal'; }
+    $('categoryLabel').textContent = label;
+    const sel=$('category');
+    while(sel.firstChild) sel.removeChild(sel.firstChild);
+    list.forEach(item=>{
+      const opt=document.createElement('option');
+      opt.value=item;
+      opt.textContent=item;
+      sel.appendChild(opt);
+    });
+    $('note').placeholder = placeholder;
+  }
+  function getPeriodBounds(){
+    const now = new Date();
+    const today = new Date(now.getFullYear(),now.getMonth(),now.getDate(),12);
+    let start=null,end=null,label='Todo';
+
+    if(periodMode==='week'){
+      const day=(today.getDay()+6)%7;
+      start=new Date(today); start.setDate(today.getDate()-day);
+      end=new Date(start); end.setDate(start.getDate()+6);
+      label='Esta semana · '+fmtDate(localDateString(start))+' al '+fmtDate(localDateString(end));
+    } else if(periodMode==='month'){
+      start=new Date(today.getFullYear(),today.getMonth(),1,12);
+      end=new Date(today.getFullYear(),today.getMonth()+1,0,12);
+      label='Este mes · '+new Intl.DateTimeFormat('es-MX',{month:'long',year:'numeric'}).format(start);
+    } else if(periodMode==='prevMonth'){
+      start=new Date(today.getFullYear(),today.getMonth()-1,1,12);
+      end=new Date(today.getFullYear(),today.getMonth(),0,12);
+      label='Mes anterior · '+new Intl.DateTimeFormat('es-MX',{month:'long',year:'numeric'}).format(start);
+    } else if(periodMode==='custom'){
+      start=parseDateOnly(customFrom); end=parseDateOnly(customTo);
+      label=(start&&end)?('Personalizado · '+fmtDate(customFrom)+' al '+fmtDate(customTo)):'Personalizado';
+    } else {
+      label='Todo el historial';
+    }
+    return {start,end,label};
+  }
+
+  function movementInPeriod(m){
+    const b=getPeriodBounds();
+    if(!b.start || !b.end) return true;
+    const d=parseDateOnly(m.date);
+    if(!d) return false;
+    return d>=b.start && d<=b.end;
+  }
+
+  function periodMovements(){ return state.movements.filter(movementInPeriod); }
+
+  function totals(){
+    let income=0, expense=0, saving=0, investment=0; const byCat={};
+    for(const m of periodMovements()){
+      if(m.type==='income') income += m.amount;
+      else if(m.type==='expense'){ expense += m.amount; byCat[m.category]=(byCat[m.category]||0)+m.amount; }
+      else if(m.type==='saving') saving += m.amount;
+      else if(m.type==='investment') investment += m.amount;
+    }
+    return {income,expense,saving,investment,balance:income-expense-saving-investment,byCat};
+  }
+  function render(){
+    const t = totals();
+    $('periodLabel').textContent = 'Mostrando: ' + getPeriodBounds().label;
+    $('incomeTotal').textContent = money.format(t.income);
+    $('expenseTotal').textContent = money.format(t.expense);
+    $('savingTotal').textContent = money.format(t.saving);
+    $('investmentTotal').textContent = money.format(t.investment);
+    $('balanceTotal').textContent = money.format(t.balance);
+    $('wealthTotal').textContent = money.format(t.saving + t.investment);
+    const built = t.saving + t.investment;
+    const pct = t.income > 0 ? (built / t.income) * 100 : 0;
+    $('wealthInsight').textContent = t.income > 0
+      ? 'Este mes estás destinando ' + Math.round(pct) + '% de tus ingresos a ahorro e inversión.'
+      : 'Registra tus ingresos para calcular qué porcentaje estás destinando a construir patrimonio.';
+
+    const nowBudget=new Date();
+    const budgetMonthMovements=state.movements.filter(m=>{
+      if(m.type!=='expense') return false;
+      const d=parseDateOnly(m.date);
+      return d && d.getFullYear()===nowBudget.getFullYear() && d.getMonth()===nowBudget.getMonth();
+    });
+    const budgetSpentByCat={};
+    budgetMonthMovements.forEach(m=>budgetSpentByCat[m.category]=(budgetSpentByCat[m.category]||0)+(Number(m.amount)||0));
+
+    const configured = Object.entries(state.budgets).filter(([,v])=>Number(v)>0);
+    $('budgetList').innerHTML = configured.length ? configured.map(([cat,limit])=>{
+      limit=Number(limit)||0;
+      const spent=budgetSpentByCat[cat]||0, pct=limit>0?(spent/limit)*100:0, remain=limit-spent;
+      let cls='good', status='Bien';
+      if(pct>=100){cls='bad';status='Te pasaste';}
+      else if(pct>=80){cls='warn';status='Cuidado';}
+      return `<div class="budget-row"><div class="row-top"><strong>${esc(cat)}</strong><span>${money.format(spent)} de ${money.format(limit)}<br>${remain>=0?'Te quedan '+money.format(remain):'Exceso '+money.format(Math.abs(remain))}</span></div><div class="bar"><div class="fill ${cls}" style="width:${Math.min(100,pct)}%"></div></div><div class="status ${cls==='good'?'income':cls==='bad'?'expense':''}">${status} · ${Math.round(pct)}%</div>
+      <div class="actions"><button class="ghost budget-edit" data-cat="${esc(cat)}" type="button">Editar</button><button class="ghost budget-delete" data-cat="${esc(cat)}" type="button">Eliminar</button></div></div>`;
+    }).join('') : '<p class="section-sub">Aún no has configurado presupuestos.</p>';
+
+    const goals = state.goals || [];
+    $('goalList').innerHTML = goals.length ? goals.map((g,idx)=>{
+      const target = Number(g.target)||0, current = Number(g.current)||0;
+      const pct = target>0 ? Math.min(100,(current/target)*100) : 0;
+      const remaining = Math.max(0,target-current);
+      let dateText = '';
+      if(g.date){
+        const [y,m,d] = g.date.split('-').map(Number);
+        const dt = new Date(Date.UTC(y,m-1,d));
+        dateText = ' · Meta ' + new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'}).format(dt);
+      }
+      return `<div class="budget-row">
+        <div class="row-top">
+          <strong>${esc(g.name)}</strong>
+          <span>${money.format(current)} de ${money.format(target)}${dateText}</span>
+        </div>
+        <div class="bar"><div class="fill good" style="width:${pct}%"></div></div>
+        <div class="status income">${Math.round(pct)}% · Faltan ${money.format(remaining)}</div>
+        <div class="actions">
+          <button class="ghost goal-add" data-idx="${idx}" type="button">Agregar aportación</button>
+          <button class="ghost goal-delete" data-idx="${idx}" type="button">Eliminar</button>
+        </div>
+      </div>`;
+    }).join('') : '<p class="section-sub">Todavía no tienes metas de ahorro.</p>';
+
+    rootGoalActions();
+
+    const recent = periodMovements().slice().reverse().slice(0,12);
+    $('movementList').innerHTML = recent.length ? recent.map(m=>{
+  
+    const totalDebt=state.debts.reduce((s,d)=>s+(Number(d.current)||0),0);
+    $('debtSummary').textContent=state.debts.length ? 'Saldo pendiente total: '+money.format(totalDebt) : '';
+    $('debtList').innerHTML=state.debts.length ? state.debts.map((d,idx)=>{
+      const initial=Number(d.initial)||0,current=Number(d.current)||0;
+      const paid=Math.max(0,initial-current);
+      const pct=initial>0?Math.min(100,(paid/initial)*100):0;
+      return `<div class="budget-row"><div class="row-top"><strong>${esc(d.name)}</strong><span>Debes ${money.format(current)} de ${money.format(initial)}</span></div><div class="bar"><div class="fill good" style="width:${pct}%"></div></div><div class="status">${Math.round(pct)}% pagado${d.payment?' · Pago mensual '+money.format(Number(d.payment)):''}${d.dueDay?' · Día '+esc(d.dueDay):''}</div><div class="actions"><button class="ghost debt-pay" data-idx="${idx}" type="button">Registrar pago</button><button class="ghost debt-edit" data-idx="${idx}" type="button">Editar</button><button class="ghost debt-delete" data-idx="${idx}" type="button">Eliminar</button></div>${(d.payments||[]).length?`<details><summary>Historial de abonos (${d.payments.length})</summary>${d.payments.slice().reverse().map(p=>`<div class="mov"><div><strong>${money.format(Number(p.amount)||0)}</strong><div class="meta">${fmtDate(p.date)}</div></div><div class="actions"><button class="ghost pay-edit" data-di="${idx}" data-pid="${p.id}" type="button">Editar</button><button class="ghost pay-delete" data-di="${idx}" data-pid="${p.id}" type="button">Eliminar</button></div></div>`).join('')}</details>`:'<div class="meta">Aún no hay abonos registrados.</div>'}</div>`;
+    }).join('') : '<p class="section-sub">Todavía no tienes deudas registradas.</p>';
+
+    document.querySelectorAll('.debt-pay').forEach(btn=>btn.onclick=()=>{
+      const idx=Number(btn.dataset.idx),d=state.debts[idx]; if(!d)return;
+      const raw=prompt('¿Cuánto pagaste a "'+d.name+'"?'); if(raw===null)return;
+      const amount=Number(raw); if(!Number.isFinite(amount)||amount<=0){alert('Escribe un pago mayor a cero.');return;}
+      const applied=Math.min(amount,Number(d.current)||0),date=localDateString(),pid='p_'+Date.now(),mid='m_'+Date.now()+'_debt';
+      if(!Array.isArray(d.payments))d.payments=[];
+      d.payments.push({id:pid,amount:applied,date,movementId:mid});
+      d.current=Math.max(0,(Number(d.current)||0)-applied);
+      state.movements.push({id:mid,type:'expense',amount:applied,category:'Deudas',note:'Pago: '+d.name,date,ts:Date.now(),paymentId:pid,debtId:d.id});
+      save(); render();
+    });
+    document.querySelectorAll('.pay-edit').forEach(btn=>btn.onclick=()=>{
+      const d=state.debts[Number(btn.dataset.di)]; if(!d)return;
+      const p=(d.payments||[]).find(x=>x.id===btn.dataset.pid); if(!p)return;
+      const raw=prompt('Nuevo monto del abono:',p.amount); if(raw===null)return;
+      const val=Number(raw); if(!Number.isFinite(val)||val<=0){alert('Escribe un monto válido.');return;}
+      const old=Number(p.amount)||0,diff=val-old;
+      d.current=Math.max(0,(Number(d.current)||0)-diff); p.amount=val;
+      const mov=state.movements.find(m=>m.id===p.movementId||m.paymentId===p.id);
+      if(mov)mov.amount=val;
+      save();render();
+    });
+    document.querySelectorAll('.pay-delete').forEach(btn=>btn.onclick=()=>{
+      const d=state.debts[Number(btn.dataset.di)]; if(!d)return;
+      const pi=(d.payments||[]).findIndex(x=>x.id===btn.dataset.pid); if(pi<0)return;
+      const p=d.payments[pi];
+      if(confirm('¿Eliminar este abono de '+money.format(Number(p.amount)||0)+'?')){
+        d.current=(Number(d.current)||0)+(Number(p.amount)||0);
+        state.movements=state.movements.filter(m=>!(m.id===p.movementId||m.paymentId===p.id));
+        d.payments.splice(pi,1);save();render();
+      }
+    });
+
+    document.querySelectorAll('.debt-edit').forEach(btn=>btn.onclick=()=>{
+      const idx=Number(btn.dataset.idx),d=state.debts[idx]; if(!d)return;
+      const name=prompt('Nombre de la deuda:',d.name); if(name===null)return;
+      const initialRaw=prompt('Saldo inicial:',d.initial); if(initialRaw===null)return;
+      const currentRaw=prompt('Saldo actual:',d.current); if(currentRaw===null)return;
+      const paymentRaw=prompt('Pago mensual:',d.payment||0); if(paymentRaw===null)return;
+      const dueDay=prompt('Día de pago (1 al 31):',d.dueDay||''); if(dueDay===null)return;
+      const initial=Number(initialRaw),current=Number(currentRaw),payment=Number(paymentRaw||0);
+      if(!name.trim()||!Number.isFinite(initial)||initial<=0||!Number.isFinite(current)||current<0||!Number.isFinite(payment)||payment<0){
+        alert('Revisa los datos de la deuda.'); return;
+      }
+      if(dueDay!==''&&(Number(dueDay)<1||Number(dueDay)>31)){alert('El día debe ser del 1 al 31.');return;}
+      d.name=name.trim(); d.initial=initial; d.current=current; d.payment=payment; d.dueDay=dueDay;
+      save(); render();
+    });
+    document.querySelectorAll('.debt-delete').forEach(btn=>btn.onclick=()=>{
+      const idx=Number(btn.dataset.idx),d=state.debts[idx]; if(!d)return;
+      if(confirm('¿Eliminar la deuda "'+d.name+'"? Esto no borrará los pagos ya registrados.')){state.debts.splice(idx,1);save();render();}
+    });
+
+    const labels={income:'Ingreso',expense:'Gasto',saving:'Ahorro',investment:'Inversión'};
+      const sign=m.type==='income'?'+':'−';
+      const cls=m.type==='expense'?'expense':'income';
+      return `<div class="mov"><div style="flex:1"><strong>${esc(m.note||m.category)}</strong><div class="meta">${labels[m.type]||'Movimiento'} · ${esc(m.category)} · ${fmtDate(m.date)}</div><div class="actions"><button class="ghost edit-mov" data-id="${esc(m.id||'')}" type="button">Editar</button><button class="ghost delete-mov" data-id="${esc(m.id||'')}" type="button">Eliminar</button></div></div><strong class="${cls}">${sign}${money.format(m.amount)}</strong></div>`;
+    }).join('') : '<p class="section-sub">Todavía no hay movimientos.</p>';
+  }
+
+  $('budgetList').addEventListener('click',e=>{
+    const edit=e.target.closest('.budget-edit');
+    const del=e.target.closest('.budget-delete');
+
+    if(edit){
+      const cat=edit.dataset.cat;
+      $('budgetCategory').value=cat;
+      $('budgetAmount').value=Number(state.budgets[cat])||0;
+      $('budgetMsg').textContent='Editando presupuesto de '+cat+'. Cambia el importe y pulsa Guardar presupuesto.';
+      $('budgetAmount').focus();
+      return;
+    }
+    if(del){
+      const cat=del.dataset.cat;
+      if(confirm('¿Eliminar solamente el presupuesto de "'+cat+'"?')){
+        delete state.budgets[cat];
+        save();
+        $('budgetMsg').textContent='Presupuesto eliminado.';
+        render();
+      }
+    }
+  });
+
+  function rootGoalActions(){
+    document.querySelectorAll('.goal-add').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const idx=Number(btn.dataset.idx);
+        const g=state.goals[idx];
+        if(!g) return;
+        const raw=prompt('¿Cuánto quieres agregar a "'+g.name+'"?');
+        if(raw===null) return;
+        const amount=Number(raw);
+        if(!Number.isFinite(amount)||amount<=0){ alert('Escribe un monto mayor a cero.'); return; }
+        g.current = (Number(g.current)||0) + amount;
+        state.movements.push({type:'saving',amount,category:'Meta de ahorro',note:g.name,date:localDateString(),ts:Date.now()});
+        save(); render();
+      });
+    });
+
+    document.querySelectorAll('.goal-edit').forEach(btn=>btn.onclick=()=>{
+      const idx=Number(btn.dataset.idx),g=state.goals[idx]; if(!g)return;
+      const name=prompt('Nombre de la meta:',g.name); if(name===null)return;
+      const targetRaw=prompt('Monto objetivo:',g.target); if(targetRaw===null)return;
+      const currentRaw=prompt('Ahorro actual:',g.current); if(currentRaw===null)return;
+      const target=Number(targetRaw),current=Number(currentRaw);
+      if(!name.trim()||!Number.isFinite(target)||target<=0||!Number.isFinite(current)||current<0){
+        alert('Revisa los datos de la meta.'); return;
+      }
+      g.name=name.trim(); g.target=target; g.current=current;
+      save(); render();
+    });
+
+    document.querySelectorAll('.goal-delete').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const idx=Number(btn.dataset.idx);
+        const g=state.goals[idx];
+        if(!g) return;
+        if(confirm('¿Eliminar la meta "'+g.name+'"?')){
+          state.goals.splice(idx,1); save(); render();
+        }
+      });
+    });
+  }
+
+  function cancelEdit(){
+    editingMovementIndex=null; $('addMovementBtn').textContent='Agregar'; $('cancelEditBtn').classList.add('hidden');
+    $('amount').value=''; $('note').value=''; $('movementDate').value=localDateString();
+  const reportNow=new Date();
+  $('reportMonth').value=reportNow.getFullYear()+'-'+String(reportNow.getMonth()+1).padStart(2,'0'); $('movementMsg').textContent=''; updateCategories();
+  }
+
+  $('type').addEventListener('change', updateCategories);
+  $('cancelEditBtn').addEventListener('click', cancelEdit);
+  $('addMovementBtn').addEventListener('click', ()=>{
+    const amount=Number($('amount').value);
+    if(!Number.isFinite(amount)||amount<=0){$('movementMsg').textContent='Escribe un monto mayor a cero.';return;}
+    if(!$('category').value){$('movementMsg').textContent='Selecciona el tipo de movimiento.';return;}
+    const movementDate=$('movementDate').value || localDateString();
+    const data={id:'m_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),type:$('type').value,amount,category:$('category').value,note:$('note').value.trim(),date:movementDate,ts:Date.now()};
+    if(editingMovementIndex!==null && state.movements[editingMovementIndex]){
+      data.ts=state.movements[editingMovementIndex].ts||Date.now();
+      data.id=state.movements[editingMovementIndex].id||data.id;
+      state.movements[editingMovementIndex]=data;
+      editingMovementIndex=null; $('addMovementBtn').textContent='Agregar'; $('cancelEditBtn').classList.add('hidden');
+      $('movementMsg').textContent='Movimiento actualizado correctamente.';
+    } else {
+      state.movements.push(data); $('movementMsg').textContent='Movimiento guardado correctamente.';
+    }
+    save(); $('amount').value=''; $('note').value=''; $('movementDate').value=localDateString(); updateCategories(); render();
+  });
+
+  $('budgetForm').addEventListener('submit', e=>{
+    e.preventDefault();
+    const amount=Number($('budgetAmount').value);
+    if(!Number.isFinite(amount)||amount<0){$('budgetMsg').textContent='Escribe un presupuesto válido.';return;}
+    state.budgets[$('budgetCategory').value]=amount;
+    save(); $('budgetMsg').textContent='Presupuesto guardado.'; render();
+  });
+
+  $('goalForm').addEventListener('submit', e=>{
+    e.preventDefault();
+    const name=$('goalName').value.trim();
+    const target=Number($('goalTarget').value);
+    const current=Number($('goalCurrent').value||0);
+    const date=$('goalDate').value;
+    if(!name){$('goalMsg').textContent='Escribe un nombre para la meta.';return;}
+    if(!Number.isFinite(target)||target<=0){$('goalMsg').textContent='Escribe un monto objetivo mayor a cero.';return;}
+    if(!Number.isFinite(current)||current<0){$('goalMsg').textContent='El ahorro actual no puede ser negativo.';return;}
+    state.goals.push({name,target,current,date});
+    save();
+    $('goalName').value=''; $('goalTarget').value=''; $('goalCurrent').value=''; $('goalDate').value='';
+    $('goalMsg').textContent='Meta creada.';
+    render();
+  });
+
+  $('movementList').addEventListener('click', e=>{
+    const editBtn=e.target.closest('.edit-mov');
+    const deleteBtn=e.target.closest('.delete-mov');
+
+    if(editBtn){
+      const id=editBtn.dataset.id;
+      const idx=state.movements.findIndex(m=>m.id===id);
+      const m=state.movements[idx];
+      if(idx<0 || !m) return;
+      editingMovementIndex=idx;
+      $('type').value=m.type;
+      updateCategories();
+      $('category').value=m.category;
+      $('amount').value=m.amount;
+      $('movementDate').value=m.date||localDateString();
+      $('note').value=m.note||'';
+      $('addMovementBtn').textContent='Guardar cambios';
+      $('cancelEditBtn').classList.remove('hidden');
+      $('movementMsg').textContent='Editando movimiento.';
+      showTab('mov');
+      window.scrollTo({top:0,behavior:'smooth'});
+      return;
+    }
+
+    if(deleteBtn){
+      const id=deleteBtn.dataset.id;
+      const idx=state.movements.findIndex(m=>m.id===id);
+      if(idx<0) return;
+      if(confirm('¿Seguro que quieres eliminar solamente este movimiento?')){
+        state.movements.splice(idx,1);
+        cancelEdit();
+        save();
+        render();
+      }
+    }
+  });
+
+  $('addDebtBtn').onclick=function(){
+    const name=$('debtName').value.trim();
+    const initial=Number($('debtInitial').value);
+    const currentRaw=$('debtCurrent').value.trim();
+    const current=currentRaw===''?initial:Number(currentRaw);
+    const paymentRaw=$('debtPayment').value.trim();
+    const payment=paymentRaw===''?0:Number(paymentRaw);
+    const dueDay=$('debtDueDay').value.trim();
+
+    if(!name){$('debtMsg').textContent='Escribe el nombre de la deuda.';return;}
+    if(!Number.isFinite(initial)||initial<=0){$('debtMsg').textContent='Escribe un saldo inicial mayor a cero.';return;}
+    if(!Number.isFinite(current)||current<0){$('debtMsg').textContent='Escribe un saldo actual válido.';return;}
+    if(paymentRaw!=='' && (!Number.isFinite(payment)||payment<0)){$('debtMsg').textContent='Escribe un pago mensual válido.';return;}
+    if(dueDay!=='' && (Number(dueDay)<1 || Number(dueDay)>31)){$('debtMsg').textContent='El día de pago debe ser del 1 al 31.';return;}
+
+    state.debts.push({id:'d_'+Date.now(),name,initial,current,payment,dueDay,payments:[]});
+    const saved=save();
+    render();
+    ['debtName','debtInitial','debtCurrent','debtPayment','debtDueDay'].forEach(id=>$(id).value='');
+    $('debtMsg').textContent=saved?'✓ Deuda registrada correctamente.':'La deuda se agregó, pero el navegador no permitió guardarla.';
+    $('debtsContent').scrollIntoView({behavior:'smooth',block:'start'});
+  };
+
+  $('backupBtn').addEventListener('click',()=>{
+    try{
+      const payload={
+        app:'Mi Dinero | Finanzas con Xenia',
+        version:'5.6',
+        createdAt:new Date().toISOString(),
+        data:state
+      };
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      const d=new Date();
+      const date=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      a.href=url;
+      a.download='Respaldo_Mi_Dinero_'+date+'.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+      $('backupMsg').textContent='✓ Respaldo creado. Guárdalo en un lugar seguro.';
+    }catch(e){
+      $('backupMsg').textContent='No se pudo crear el respaldo en este navegador.';
+    }
+  });
+
+  $('restoreBtn').addEventListener('click',()=>$('restoreFile').click());
+
+  $('restoreFile').addEventListener('change',()=>{
+    const file=$('restoreFile').files && $('restoreFile').files[0];
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const parsed=JSON.parse(reader.result);
+        const incoming=parsed && parsed.data ? parsed.data : parsed;
+        if(!incoming || !Array.isArray(incoming.movements)){
+          throw new Error('Formato no válido');
+        }
+        if(!confirm('¿Restaurar este respaldo? Los datos actuales de la app serán reemplazados por los del archivo seleccionado.'))return;
+        state={
+          movements:Array.isArray(incoming.movements)?incoming.movements:[],
+          budgets:incoming.budgets||{},
+          goals:Array.isArray(incoming.goals)?incoming.goals:[],
+          debts:Array.isArray(incoming.debts)?incoming.debts:[]
+        };
+        state.debts=state.debts.map((d,i)=>{if(!d.id)d.id='d_restore_'+Date.now()+'_'+i;if(!Array.isArray(d.payments))d.payments=[];return d;});
+        state.movements=state.movements.map((m,i)=>{if(!m.id)m.id='m_restore_'+Date.now()+'_'+i;if(!m.date){const d=m.ts?new Date(m.ts):new Date();m.date=localDateString(d);}return m;});
+        save();
+        render();
+        $('backupMsg').textContent='✓ Respaldo restaurado correctamente.';
+        alert('Respaldo restaurado correctamente.');
+      }catch(e){
+        alert('Este archivo no parece ser un respaldo válido de Mi Dinero.');
+      }finally{
+        $('restoreFile').value='';
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  $('clearBtn').addEventListener('click', ()=>{
+    if(confirm('¿Seguro que quieres borrar todos los movimientos y presupuestos?')){
+      state={movements:[],budgets:{},goals:[],debts:[]}; save(); render();
+    }
+  });
+
+
+  function monthTotals(ym){
+    const [yy,mm]=ym.split('-').map(Number);
+    const ms=state.movements.filter(m=>{
+      const d=parseDateOnly(m.date);
+      return d && d.getFullYear()===yy && d.getMonth()===(mm-1);
+    });
+    let income=0,expense=0,saving=0,investment=0,debtPayments=0;
+    const cats={};
+    ms.forEach(m=>{
+      const a=Number(m.amount)||0;
+      if(m.type==='income') income+=a;
+      else if(m.type==='expense'){
+        expense+=a; cats[m.category]=(cats[m.category]||0)+a;
+        if(m.category==='Deudas') debtPayments+=a;
+      } else if(m.type==='saving') saving+=a;
+      else if(m.type==='investment') investment+=a;
+    });
+    return {income,expense,saving,investment,debtPayments,cats,balance:income-expense-saving-investment};
+  }
+
+  function previousMonthYM(ym){
+    const [y,m]=ym.split('-').map(Number);
+    const d=new Date(y,m-2,1);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  }
+
+  function renderReport(){
+    const ym=$('reportMonth').value;
+    if(!ym)return;
+    const r=monthTotals(ym), prev=monthTotals(previousMonthYM(ym));
+    $('rIncome').textContent=money.format(r.income);
+    $('rExpense').textContent=money.format(r.expense);
+    $('rSaving').textContent=money.format(r.saving);
+    $('rInvestment').textContent=money.format(r.investment);
+    $('rBalance').textContent=money.format(r.balance);
+    $('rDebtPayments').textContent=money.format(r.debtPayments);
+
+    const wealth=r.saving+r.investment;
+    const wealthPct=r.income>0?(wealth/r.income)*100:0;
+    $('rWealth').textContent=money.format(wealth);
+    $('rWealthBar').style.width=Math.min(100,wealthPct)+'%';
+    $('rWealthText').textContent=r.income>0
+      ? Math.round(wealthPct)+'% de tus ingresos se destinó a ahorro e inversión.'
+      : 'Sin ingresos registrados en este mes.';
+
+    const cats=Object.entries(r.cats).sort((a,b)=>b[1]-a[1]);
+    $('rCategories').innerHTML=cats.length?cats.map(([cat,val])=>{
+      const pct=r.expense>0?(val/r.expense)*100:0;
+      return `<div class="budget-row"><div class="row-top"><strong>${esc(cat)}</strong><span>${money.format(val)} · ${Math.round(pct)}%</span></div><div class="bar"><div class="fill warn" style="width:${Math.min(100,pct)}%"></div></div></div>`;
+    }).join(''):'<p class="section-sub">No hay gastos registrados en este mes.</p>';
+
+    const insights=[];
+    if(r.income>0){
+      insights.push('De cada $100 que ingresaron, '+money.format((r.expense/r.income)*100).replace('$','')+' se fueron a gastos.');
+      if(wealth>0) insights.push('Destinaste '+Math.round(wealthPct)+'% de tus ingresos a ahorro e inversión.');
+    }
+    if(cats.length) insights.push('Tu categoría de gasto más alta fue '+cats[0][0]+' con '+money.format(cats[0][1])+'.');
+    if(r.debtPayments>0) insights.push('Pagaste '+money.format(r.debtPayments)+' a deudas durante el mes.');
+    if(r.balance>=0) insights.push('Después de gastos, ahorro e inversión, tu disponible del mes fue '+money.format(r.balance)+'.');
+    else insights.push('Tus salidas superaron tus ingresos del mes por '+money.format(Math.abs(r.balance))+'.');
+    $('rInsights').innerHTML=insights.length?insights.map(x=>'• '+esc(x)).join('<br>'):'Todavía no hay información suficiente para este mes.';
+
+    if(prev.income===0 && prev.expense===0 && prev.saving===0 && prev.investment===0){
+      $('rComparison').textContent='No hay información del mes anterior para comparar.';
+    }else{
+      const expenseDiff=r.expense-prev.expense;
+      const wealthDiff=wealth-(prev.saving+prev.investment);
+      const parts=[];
+      parts.push(expenseDiff===0?'Gastaste lo mismo que el mes anterior.':(expenseDiff<0?'Gastaste '+money.format(Math.abs(expenseDiff))+' menos que el mes anterior.':'Gastaste '+money.format(expenseDiff)+' más que el mes anterior.'));
+      parts.push(wealthDiff===0?'Ahorraste e invertiste lo mismo que el mes anterior.':(wealthDiff>0?'Destinaste '+money.format(wealthDiff)+' más a ahorro e inversión.':'Destinaste '+money.format(Math.abs(wealthDiff))+' menos a ahorro e inversión.'));
+      $('rComparison').textContent=parts.join(' ');
+    }
+  }
+
+  function showTab(which){
+    const mov=which==='mov', budget=which==='budget', goals=which==='goals', debts=which==='debts', report=which==='report';
+    $('movementPanel').classList.toggle('hidden',!mov);
+    $('budgetPanel').classList.toggle('hidden',!budget);
+    $('goalsPanel').classList.toggle('hidden',!goals);
+    $('debtsPanel').classList.toggle('hidden',!debts);
+    $('movementContent').classList.toggle('hidden',!mov);
+    $('budgetContent').classList.toggle('hidden',!budget);
+    $('goalsContent').classList.toggle('hidden',!goals);
+    $('debtsContent').classList.toggle('hidden',!debts);
+    $('reportPanel').classList.toggle('hidden',!report);
+    $('tabMov').classList.toggle('active',mov);
+    $('tabBudget').classList.toggle('active',budget);
+    $('tabGoals').classList.toggle('active',goals);
+    $('tabDebts').classList.toggle('active',debts);
+    $('tabReport').classList.toggle('active',report);
+    if(report) renderReport();
+  }
+  $('tabMov').addEventListener('click',()=>showTab('mov'));
+  $('tabBudget').addEventListener('click',()=>showTab('budget'));
+  $('tabGoals').addEventListener('click',()=>showTab('goals'));
+  $('tabDebts').addEventListener('click',()=>showTab('debts'));
+  $('tabReport').addEventListener('click',()=>showTab('report'));
+  $('reportMonth').addEventListener('change',renderReport);
+
+  function setPeriod(mode){
+    periodMode=mode;
+    ['periodWeek','periodMonth','periodPrevMonth','periodAll','periodCustom'].forEach(id=>$(id).classList.remove('active'));
+    const map={week:'periodWeek',month:'periodMonth',prevMonth:'periodPrevMonth',all:'periodAll',custom:'periodCustom'};
+    $(map[mode]).classList.add('active');
+    $('customPeriod').classList.toggle('hidden',mode!=='custom');
+    render();
+  }
+
+  $('periodWeek').addEventListener('click',()=>setPeriod('week'));
+  $('periodMonth').addEventListener('click',()=>setPeriod('month'));
+  $('periodPrevMonth').addEventListener('click',()=>setPeriod('prevMonth'));
+  $('periodAll').addEventListener('click',()=>setPeriod('all'));
+  $('periodCustom').addEventListener('click',()=>setPeriod('custom'));
+  $('applyCustom').addEventListener('click',()=>{
+    customFrom=$('dateFrom').value; customTo=$('dateTo').value;
+    if(!customFrom || !customTo){ alert('Selecciona fecha inicial y final.'); return; }
+    if(customFrom>customTo){ alert('La fecha inicial no puede ser posterior a la final.'); return; }
+    render();
+  });
+
+  $('budgetCategory').innerHTML=budgetCategories.map(x=>`<option>${esc(x)}</option>`).join('');
+  load();
+  $('movementDate').value=localDateString();
+  updateCategories();
+  render();
+  showTab('mov');
+  setPeriod('month');
+
+  
+})();
+</script>
+</body>
+</html>
